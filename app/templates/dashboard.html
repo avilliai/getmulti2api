@@ -1,0 +1,736 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GetMulti AI 2API 控制台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        :root {
+            --bg-base: #090d16;
+            --bg-card: #111827;
+            --bg-card-hover: #1f293d;
+            --border: #222f46;
+            --text-main: #f3f4f6;
+            --text-muted: #94a3b8;
+            --brand-primary: #38bdf8;
+            --brand-gradient: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+            --chip-bg: rgba(255, 255, 255, 0.05);
+            --chip-active: rgba(56, 189, 248, 0.15);
+            --chip-border: rgba(255, 255, 255, 0.1);
+        }
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            padding-bottom: 60px;
+        }
+        code, pre, .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .glass-nav {
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .gradient-text {
+            background: var(--brand-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+        .panel-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .panel-card:hover {
+            border-color: rgba(56, 189, 248, 0.3);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+        .stat-glow {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: var(--brand-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .vendor-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 14px;
+            border-radius: 9999px;
+            background: var(--chip-bg);
+            border: 1px solid var(--chip-border);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .vendor-chip:hover {
+            color: #fff;
+            border-color: var(--brand-primary);
+            background: rgba(56, 189, 248, 0.08);
+        }
+        .vendor-chip.active {
+            color: var(--brand-primary);
+            background: var(--chip-active);
+            border-color: var(--brand-primary);
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+        }
+        .model-card-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #141c2e;
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .model-card-item:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(56, 189, 248, 0.4);
+            transform: translateY(-2px);
+        }
+        .model-card-item.selected {
+            background: rgba(56, 189, 248, 0.08);
+            border-color: var(--brand-primary);
+            box-shadow: 0 0 0 1px var(--brand-primary), 0 4px 16px rgba(56, 189, 248, 0.2);
+        }
+        .model-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .icon-nvidia { color: #76b900; background: rgba(118, 185, 0, 0.1); }
+        .icon-google { color: #38bdf8; background: rgba(56, 189, 248, 0.1); }
+        .icon-cohere { color: #39a388; background: rgba(57, 163, 136, 0.1); }
+        .icon-thinkingmachines { color: #f43f5e; background: rgba(244, 63, 94, 0.1); }
+        .icon-dots { color: #a855f7; background: rgba(168, 85, 247, 0.1); }
+        .icon-liquid { color: #06b6d4; background: rgba(6, 182, 212, 0.1); }
+        .icon-recursive { color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
+        .icon-xingchen { color: #ec4899; background: rgba(236, 72, 153, 0.1); }
+        .check-badge {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+        }
+        .model-card-item.selected .check-badge {
+            background: var(--brand-primary);
+            color: #090d16;
+            border-color: var(--brand-primary);
+        }
+        .table { color: var(--text-main); margin: 0; }
+        .table > :not(caption) > * > * {
+            background-color: transparent;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 16px;
+            vertical-align: middle;
+        }
+        .table tr:hover td { background-color: rgba(255, 255, 255, 0.02); }
+        .form-control, .form-select {
+            background-color: #0b1120;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            border-radius: 10px;
+            padding: 8px 12px;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: #0e1629;
+            border-color: var(--brand-primary);
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+            color: #fff;
+        }
+        .chat-stream-box {
+            background: #070b14;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            min-height: 180px;
+            max-height: 380px;
+            overflow-y: auto;
+            padding: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.88rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            color: #e2e8f0;
+        }
+        .btn-modern-primary {
+            background: var(--brand-gradient);
+            border: none;
+            color: #090d16;
+            font-weight: 600;
+            border-radius: 10px;
+            padding: 8px 16px;
+            transition: all 0.2s ease;
+        }
+        .btn-modern-primary:hover {
+            opacity: 0.92;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(56, 189, 248, 0.3);
+            color: #090d16;
+        }
+        .custom-badge {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        .badge-cf { background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.3); }
+        .badge-outlook { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+        .badge-success-subtle { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
+    </style>
+</head>
+<body>    <!-- Top Navigation -->
+    <nav class="glass-nav py-3 mb-4">
+        <div class="container d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+                <span class="fs-4 gradient-text">
+                    <i class="bi bi-layers-half me-2"></i>Multi AI 2API
+                </span>
+                <span class="badge bg-dark border border-secondary text-secondary custom-badge">v1.2.0</span>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <div class="input-group input-group-sm" style="width: 220px;">
+                    <span class="input-group-text bg-dark border-secondary text-secondary"><i class="bi bi-key"></i></span>
+                    <input type="password" id="apiKeyInput" class="form-control form-control-sm" placeholder="Bearer API Key" onchange="saveApiKey()">
+                </div>
+                <button class="btn btn-sm btn-outline-light rounded-pill px-3" onclick="loadAll()">
+                    <i class="bi bi-arrow-clockwise me-1"></i>刷新状态
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- 统计指标 -->
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-lg-3">
+                <div class="panel-card p-4">
+                    <div class="text-secondary small fw-medium mb-1"><i class="bi bi-people me-1"></i>账号池总量</div>
+                    <div class="stat-glow" id="statTotalAccounts">-</div>
+                    <div class="small text-muted mt-1">已注册入池账号</div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="panel-card p-4">
+                    <div class="text-secondary small fw-medium mb-1"><i class="bi bi-shield-check me-1"></i>健康活跃数</div>
+                    <div class="stat-glow text-success" id="statActiveAccounts">-</div>
+                    <div class="small text-muted mt-1">自动轮询负载均衡</div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="panel-card p-4">
+                    <div class="text-secondary small fw-medium mb-1"><i class="bi bi-cpu me-1"></i>官方精选免费模型</div>
+                    <div class="stat-glow text-info" id="statFreeModels">13</div>
+                    <div class="small text-muted mt-1">对齐官方界面 (400+全量)</div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="panel-card p-4">
+                    <div class="text-secondary small fw-medium mb-1"><i class="bi bi-lightning-charge me-1"></i>总请求处理量</div>
+                    <div class="stat-glow text-warning" id="statTotalRequests">-</div>
+                    <div class="small text-muted mt-1">Chat & FC 事务</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 官方免费模型视口 (Replica of web.getmulti.ai) -->
+        <div class="panel-card p-4 mb-4">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+                <div>
+                    <h5 class="mb-1 text-white fw-bold">
+                        <i class="bi bi-stars text-warning me-2"></i>MOST POPULAR ON OPENROUTER
+                        <span class="badge bg-success-subtle text-success ms-2 custom-badge">Free models only</span>
+                    </h5>
+                    <p class="text-muted small mb-0">严格对齐官方首页提供的 13 款完全免费模型矩阵，点击卡片即可在下方实时测试并调用：</p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-secondary small">当前选中:</span>
+                    <span class="badge bg-primary text-white font-mono px-3 py-2 rounded-pill" id="selectedModelBadge">
+                        gb/nvidia/nemotron-3-ultra-550b-a55b:free
+                    </span>
+                </div>
+            </div>
+
+            <!-- Filter chips -->
+            <div class="d-flex flex-wrap gap-2 mb-4" id="vendorFilterChips">
+                <div class="vendor-chip active" onclick="filterByVendor('all')">All sources</div>
+                <div class="vendor-chip" onclick="filterByVendor('nvidia')">NVIDIA</div>
+                <div class="vendor-chip" onclick="filterByVendor('google')">Google</div>
+                <div class="vendor-chip" onclick="filterByVendor('cohere')">Cohere</div>
+                <div class="vendor-chip" onclick="filterByVendor('dots-studio')">Dots Studio</div>
+                <div class="vendor-chip" onclick="filterByVendor('thinkingmachines')">Thinkingmachines</div>
+                <div class="vendor-chip" onclick="filterByVendor('recursive')">Recursive</div>
+                <div class="vendor-chip" onclick="filterByVendor('xingchen-agi')">Xingchen Agi</div>
+                <div class="vendor-chip" onclick="filterByVendor('liquid')">Liquid</div>
+            </div>
+
+            <!-- Models Grid -->
+            <div class="row g-3" id="modelsGridContainer"></div>
+        </div>
+
+        <div class="row g-4">
+            <!-- 账号池管理面板（含批量注册） -->
+            <div class="col-lg-7">
+                <div class="panel-card p-4 h-100">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-database me-2 text-primary"></i>账号池管理</h5>
+                        
+                        <!-- 批量注册表单控制 -->
+                        <div class="d-flex align-items-center gap-2">
+                            <select id="registerProvider" class="form-select form-select-sm" style="width: 140px;">
+                                <option value="cf_mail">Cloudflare 临时</option>
+                                <option value="outlook">Outlook 邮箱池</option>
+                                <option value="random">随机临时邮箱</option>
+                            </select>
+                            <div class="input-group input-group-sm" style="width: 110px;">
+                                <span class="input-group-text bg-dark border-secondary text-secondary">数量</span>
+                                <input type="number" id="batchCountInput" class="form-control form-control-sm text-center" value="3" min="1" max="50">
+                            </div>
+                            <button class="btn btn-sm btn-modern-primary text-nowrap" id="btnBatchRegister" onclick="triggerBatchRegister()">
+                                <i class="bi bi-node-plus-fill me-1"></i>批量注册
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 批量注册进度条提示 -->
+                    <div id="registerProgressArea" class="mb-3 d-none">
+                        <div class="d-flex justify-content-between small text-muted mb-1">
+                            <span id="registerStatusText"><i class="bi bi-hourglass-split me-1 text-warning"></i>批量注册中...</span>
+                            <span id="registerProgressPct" class="fw-bold text-info">0%</span>
+                        </div>
+                        <div class="progress" style="height: 6px; background-color: #1e293b;">
+                            <div id="registerProgressBar" class="progress-bar bg-info progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr class="text-secondary small">
+                                    <th>账号邮箱</th>
+                                    <th>渠道来源</th>
+                                    <th>状态</th>
+                                    <th>调用数</th>
+                                    <th class="text-end">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="accountTableBody">
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">加载账号中...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 在线测试 & Function Calling 演练 -->
+            <div class="col-lg-5">
+                <div class="panel-card p-4 h-100">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-terminal me-2 text-info"></i>在线流式与工具调用测试</h5>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" id="testStream" checked>
+                            <label class="form-check-label small text-muted" for="testStream">流式 SSE</label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small text-secondary">测试预设：</label>
+                        <div class="d-flex gap-2 mb-2">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="setPrompt('查一下北京今天天气怎么样？', true)">
+                                <i class="bi bi-tools me-1 text-warning"></i>触发天气 Function Calling
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="setPrompt('请用一句话介绍一下你自己。', false)">
+                                <i class="bi bi-chat-text me-1"></i>标准对话
+                            </button>
+                        </div>
+                        <textarea class="form-control" id="testPrompt" rows="3" placeholder="输入聊天内容..."></textarea>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="attachToolCheckbox" checked>
+                        <label class="form-check-label small text-muted" for="attachToolCheckbox">
+                            携带 OpenAI 标准 <code class="text-info">get_current_weather</code> 工具声明
+                        </label>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <button class="btn btn-modern-primary w-100" id="btnSendChat" onclick="sendTestChat()">
+                            <i class="bi bi-send-fill me-1"></i>发送请求
+                        </button>
+                    </div>
+
+                    <div>
+                        <div class="d-flex justify-content-between small text-muted mb-1">
+                            <span>响应输出：</span>
+                            <span id="chatStatusText" class="text-info">就绪</span>
+                        </div>
+                        <div class="chat-stream-box" id="chatOutput">点击上方按钮开始测试对话与工具调用...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>    <!-- JS Logic -->
+    <script>
+        const OFFICIAL_FREE_MODELS = [
+            { id: "gb/nvidia/nemotron-3-ultra-550b-a55b:free", name: "Nemotron 3 Ultra", vendor: "NVIDIA", icon: "bi-nvidia", iconClass: "icon-nvidia", context: "1000K", desc: "NVIDIA · 1000K · Free" },
+            { id: "gb/nvidia/nemotron-3.5-super-vl:free", name: "Nemotron 3.5 Super VL", vendor: "NVIDIA", icon: "bi-nvidia", iconClass: "icon-nvidia", context: "1000K", desc: "NVIDIA · 1000K · Free" },
+            { id: "gb/nvidia/nemotron-3.5-lightning:free", name: "Nemotron 3.5 Lightning", vendor: "NVIDIA", icon: "bi-nvidia", iconClass: "icon-nvidia", context: "1000K", desc: "NVIDIA · 1000K · Free" },
+            { id: "gb/dots-studio/dots-3-note-preview:free", name: "Dots3-Note Preview", vendor: "Dots Studio", icon: "bi-record-circle-fill", iconClass: "icon-dots", context: "512K", desc: "Dots Studio · 512K · Free" },
+            { id: "gb/thinkingmachines/inkling:free", name: "Inkling", vendor: "Thinkingmachines", icon: "bi-circle-half", iconClass: "icon-thinkingmachines", context: "1049K", desc: "Thinkingmachines · 1049K · Free" },
+            { id: "gb/thinkingmachines/inkling-small:free", name: "Inkling Small", vendor: "Thinkingmachines", icon: "bi-circle-half", iconClass: "icon-thinkingmachines", context: "1049K", desc: "Thinkingmachines · 1049K · Free" },
+            { id: "gb/cohere/north-mini-code:free", name: "North Mini Code", vendor: "Cohere", icon: "bi-code-slash", iconClass: "icon-cohere", context: "256K", desc: "Cohere · 256K · Free" },
+            { id: "gb/recursive/flint-v1.0:free", name: "Flint", vendor: "Recursive", icon: "bi-box", iconClass: "icon-recursive", context: "262K", desc: "Recursive · 262K · Free" },
+            { id: "gb/xingchen-agi/xing4.0-29b-a4b:free", name: "Xing4.0 29B A4B", vendor: "Xingchen Agi", icon: "bi-star-half", iconClass: "icon-xingchen", context: "262K", desc: "Xingchen Agi · 262K · Free" },
+            { id: "gb/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free", name: "Nemotron 3 Nano Omni", vendor: "NVIDIA", icon: "bi-nvidia", iconClass: "icon-nvidia", context: "256K", desc: "NVIDIA · 256K · Free" },
+            { id: "gb/liquid/lfm-2.5-2.6b:free", name: "LFM2.5-2.6B", vendor: "Liquid", icon: "bi-droplet-half", iconClass: "icon-liquid", context: "66K", desc: "Liquid · 66K · Free" },
+            { id: "gb/google/gemma-4-26b-a4b-it:free", name: "Gemma 4 26B A4B", vendor: "Google", icon: "bi-google", iconClass: "icon-google", context: "262K", desc: "Google · 262K · Free" },
+            { id: "gb/google/gemma-4-31b-it:free", name: "Gemma 4 31B", vendor: "Google", icon: "bi-google", iconClass: "icon-google", context: "262K", desc: "Google · 262K · Free" }
+        ];
+
+        let selectedModel = "gb/nvidia/nemotron-3-ultra-550b-a55b:free";
+        let activeVendorFilter = "all";
+
+        function getAuthHeaders() {
+            const key = document.getElementById("apiKeyInput").value.trim() || localStorage.getItem("multi_api_key") || "changeme";
+            return {
+                "Authorization": `Bearer ${key}`,
+                "Content-Type": "application/json"
+            };
+        }
+
+        function saveApiKey() {
+            const val = document.getElementById("apiKeyInput").value.trim();
+            if (val) localStorage.setItem("multi_api_key", val);
+        }
+
+        function renderModelsGrid() {
+            const container = document.getElementById("modelsGridContainer");
+            const filtered = OFFICIAL_FREE_MODELS.filter(m => {
+                if (activeVendorFilter === "all") return true;
+                const v = m.vendor.toLowerCase().replace(/\s+/g, '-');
+                return v.includes(activeVendorFilter);
+            });
+
+            container.innerHTML = filtered.map(m => {
+                const isSel = m.id === selectedModel;
+                return `
+                <div class="col-md-6 col-lg-4 col-xl-3">
+                    <div class="model-card-item ${isSel ? 'selected' : ''}" onclick="selectModel('${m.id}')">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="model-icon ${m.iconClass}">
+                                <i class="bi ${m.icon}"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-white small">${m.name}</div>
+                                <div class="text-muted" style="font-size: 0.75rem;">${m.desc}</div>
+                            </div>
+                        </div>
+                        <div class="check-badge">
+                            <i class="bi ${isSel ? 'bi-check-lg' : 'bi-plus'}"></i>
+                        </div>
+                    </div>
+                </div>`;
+            }).join("");
+        }
+
+        function filterByVendor(vendor) {
+            activeVendorFilter = vendor;
+            document.querySelectorAll("#vendorFilterChips .vendor-chip").forEach(chip => {
+                const text = chip.textContent.toLowerCase();
+                chip.classList.toggle("active", text.includes(vendor) || (vendor === 'all' && text.includes('all')));
+            });
+            renderModelsGrid();
+        }
+
+        function selectModel(modelId) {
+            selectedModel = modelId;
+            document.getElementById("selectedModelBadge").textContent = modelId;
+            renderModelsGrid();
+        }
+
+        function setPrompt(text, attachTool) {
+            document.getElementById("testPrompt").value = text;
+            document.getElementById("attachToolCheckbox").checked = attachTool;
+        }
+
+        async function loadStats() {
+            try {
+                const res = await fetch("/v1/admin/stats", { headers: getAuthHeaders() });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById("statTotalAccounts").textContent = data.total_accounts || 0;
+                    document.getElementById("statActiveAccounts").textContent = data.active_accounts || 0;
+                    document.getElementById("statTotalRequests").textContent = data.total_requests || 0;
+                }
+            } catch (e) {
+                console.error("loadStats failed", e);
+            }
+        }
+
+        async function loadAccounts() {
+            try {
+                const res = await fetch("/v1/admin/accounts", { headers: getAuthHeaders() });
+                const tbody = document.getElementById("accountTableBody");
+                if (res.ok) {
+                    const list = await res.json();
+                    if (!list || list.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">账号池暂无账号，请点击上方注册添加</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = list.map(acc => {
+                        const isCf = acc.provider === "cf_mail";
+                        const isOutlook = acc.provider === "outlook";
+                        const providerBadge = isCf 
+                            ? '<span class="badge badge-cf custom-badge">Cloudflare</span>' 
+                            : isOutlook 
+                                ? '<span class="badge badge-outlook custom-badge">Outlook池</span>'
+                                : '<span class="badge bg-secondary custom-badge">随机临时</span>';
+                        const statusBadge = acc.status === "active" 
+                            ? '<span class="badge badge-success-subtle custom-badge">健康</span>' 
+                            : '<span class="badge bg-danger custom-badge">失效</span>';
+
+                        return `
+                        <tr>
+                            <td>
+                                <div class="fw-medium font-mono small">${acc.email}</div>
+                            </td>
+                            <td>${providerBadge}</td>
+                            <td>${statusBadge}</td>
+                            <td><span class="badge bg-dark border border-secondary">${acc.request_count || 0}</span></td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-info me-1" title="刷新 Token" onclick="refreshToken('${acc.id || acc.email}')">
+                                    <i class="bi bi-arrow-repeat"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" title="移除账号" onclick="deleteAccount('${acc.id || acc.email}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>`;
+                    }).join("");
+                }
+            } catch (e) {
+                console.error("loadAccounts failed", e);
+            }
+        }
+
+        // 批量注册带进度更新
+        async function triggerBatchRegister() {
+            const btn = document.getElementById("btnBatchRegister");
+            const provider = document.getElementById("registerProvider").value;
+            const countInput = document.getElementById("batchCountInput");
+            const count = parseInt(countInput.value) || 1;
+
+            if (count < 1) return alert("注册数量至少为 1");
+            if (count > 50) return alert("单次批量注册建议不超过 50 个");
+
+            const progressArea = document.getElementById("registerProgressArea");
+            const progressBar = document.getElementById("registerProgressBar");
+            const progressPct = document.getElementById("registerProgressPct");
+            const statusText = document.getElementById("registerStatusText");
+
+            btn.disabled = true;
+            countInput.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>注册中...';
+            progressArea.classList.remove("d-none");
+            progressBar.style.width = "10%";
+            progressPct.textContent = "10%";
+            statusText.innerHTML = `<i class="bi bi-hourglass-split me-1 text-warning"></i>正在批量注册 ${count} 个账号 (${provider})...`;
+
+            try {
+                const res = await fetch("/v1/admin/accounts/batch-register", {
+                    method: "POST",
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ count: count, provider: provider })
+                });
+
+                progressBar.style.width = "90%";
+                progressPct.textContent = "90%";
+
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    progressBar.style.width = "100%";
+                    progressPct.textContent = "100%";
+                    statusText.innerHTML = `<i class="bi bi-check-circle-fill me-1 text-success"></i>成功注册入池 ${data.registered_count} / ${data.requested} 个账号！`;
+                    await loadAll();
+                    setTimeout(() => {
+                        progressArea.classList.add("d-none");
+                    }, 4000);
+                } else {
+                    const err = data.errors?.join(", ") || data.detail || "注册失败";
+                    statusText.innerHTML = `<i class="bi bi-x-circle-fill me-1 text-danger"></i>注册异常: ${err}`;
+                    alert(`❌ 批量注册失败: ${err}`);
+                }
+            } catch (e) {
+                statusText.innerHTML = `<i class="bi bi-x-circle-fill me-1 text-danger"></i>请求异常: ${e.message}`;
+                alert(`❌ 请求异常: ${e.message}`);
+            } finally {
+                btn.disabled = false;
+                countInput.disabled = false;
+                btn.innerHTML = '<i class="bi bi-node-plus-fill me-1"></i>批量注册';
+            }
+        }
+
+        async function refreshToken(id) {
+            try {
+                const res = await fetch(`/v1/admin/accounts/${encodeURIComponent(id)}/refresh`, {
+                    method: "POST",
+                    headers: getAuthHeaders()
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert("✅ Token 刷新成功！");
+                    loadAccounts();
+                } else {
+                    alert(`❌ 刷新失败: ${data.detail || "未知错误"}`);
+                }
+            } catch (e) {
+                alert(`❌ 错误: ${e.message}`);
+            }
+        }
+
+        async function deleteAccount(id) {
+            if (!confirm(`确定将账号 ${id} 从池中删除吗？`)) return;
+            try {
+                const res = await fetch(`/v1/admin/accounts/${encodeURIComponent(id)}`, {
+                    method: "DELETE",
+                    headers: getAuthHeaders()
+                });
+                if (res.ok) {
+                    loadAll();
+                } else {
+                    alert("删除失败");
+                }
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        async function sendTestChat() {
+            const prompt = document.getElementById("testPrompt").value.trim();
+            if (!prompt) return alert("请输入测试问题");
+
+            const stream = document.getElementById("testStream").checked;
+            const attachTool = document.getElementById("attachToolCheckbox").checked;
+            const outputBox = document.getElementById("chatOutput");
+            const statusText = document.getElementById("chatStatusText");
+            const btn = document.getElementById("btnSendChat");
+
+            outputBox.textContent = "";
+            statusText.textContent = "请求发送中...";
+            btn.disabled = true;
+
+            const weatherTool = {
+                type: "function",
+                function: {
+                    name: "get_current_weather",
+                    description: "获取指定城市的实时天气",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            location: { type: "string", description: "城市名称，如北京、上海" },
+                            unit: { type: "string", enum: ["celsius", "fahrenheit"], description: "单位" }
+                        },
+                        required: ["location"]
+                    }
+                }
+            };
+
+            const payload = {
+                model: selectedModel,
+                messages: [{ role: "user", content: prompt }],
+                stream: stream
+            };
+
+            if (attachTool) {
+                payload.tools = [weatherTool];
+                payload.tool_choice = "auto";
+            }
+
+            try {
+                const response = await fetch("/v1/chat/completions", {
+                    method: "POST",
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const err = await response.text();
+                    outputBox.textContent = `❌ 请求错误 (${response.status}):\n${err}`;
+                    statusText.textContent = "请求失败";
+                    btn.disabled = false;
+                    return;
+                }
+
+                if (!stream) {
+                    const data = await response.json();
+                    statusText.textContent = "响应完成";
+                    outputBox.textContent = JSON.stringify(data, null, 2);
+                    loadStats();
+                } else {
+                    statusText.textContent = "接收流式数据中...";
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder("utf-8");
+                    let done = false;
+
+                    while (!done) {
+                        const { value, done: readerDone } = await reader.read();
+                        done = readerDone;
+                        if (value) {
+                            const chunk = decoder.decode(value, { stream: true });
+                            outputBox.textContent += chunk;
+                            outputBox.scrollTop = outputBox.scrollHeight;
+                        }
+                    }
+                    statusText.textContent = "流传输完成";
+                    loadStats();
+                }
+            } catch (e) {
+                outputBox.textContent = `❌ 发送异常: ${e.message}`;
+                statusText.textContent = "发生异常";
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        function loadAll() {
+            const savedKey = localStorage.getItem("multi_api_key");
+            if (savedKey) document.getElementById("apiKeyInput").value = savedKey;
+            renderModelsGrid();
+            loadStats();
+            loadAccounts();
+        }
+
+        window.onload = loadAll;
+    </script>
+</body>
+</html>
